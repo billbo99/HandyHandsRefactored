@@ -1,0 +1,12 @@
+{
+    "name": "HandyHandsRefactored",
+    "version": "1.1.0",
+    "title": "Handy Hands (Refactored)",
+    "factorio_version": "1.1",
+    "author": "Billbo99,  Origianal Author:Qon",
+    "description": "Based off the mod `https://mods.factorio.com/mod/HandyHands` by Qon,  but will hopefully not hit UPS so hard.  Only one player is processed per nth_tick (60 ticks per scan, see startup setting).  By default 5 items will be crafted at a time (can be changed in player settings)",
+    "dependencies": [
+        "base >= 1.1.0",
+        "!HandyHands"
+    ]
+}
