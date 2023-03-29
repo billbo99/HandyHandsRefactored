@@ -25,6 +25,8 @@ end
 local function disable_autocraft(player)
     if player and player.connected then
         global.check_player[player.index] = false
+        global.player_current_job[player.index] = nil
+        global.check_player_cancelled_crafting[player.index] = nil
         player.set_shortcut_toggled(Smarts.SHORTCUT_NAME, global.check_player[player.index])
     end
 end
@@ -99,36 +101,55 @@ end
 local function check_player(player)
     -- game.print("check_player " .. " " .. game.tick .. " " .. player.name)
     if player.connected and player.controller_type == defines.controllers.character then
-        local flag = true
-        local items = get_list_of_items_to_craft(player)
-        for _, item in pairs(items) do
-            if flag then
-                local recipes = global.cached_recipes_by_product[item.name]
-                if recipes then
-                    for _, recipe in pairs(recipes) do
-                        local craftable_count = player.get_craftable_count(recipe.name)
-                        if player.force.recipes[recipe.name].enabled and craftable_count > 0 then
-                            local amount = 1
-                            for _, product in pairs(recipe.products) do
-                                if product.name == item.name then
-                                    amount = product.amount or 1
+        if global.check_player_cancelled_crafting[player.index] then
+            if global.player_current_job[player.index] then
+                local target = global.player_current_job[player.index]
+                local found = false
+                for _, recipe in pairs(player.crafting_queue) do
+                    if recipe.recipe == target.name then
+                        found = true
+                    end
+                end
+                if found then
+                    global.check_player_cancelled_crafting[player.index] = nil
+                else
+                    disable_autocraft(player)
+                end
+            end
+        else
+            global.player_current_job[player.index] = nil
+            local flag = true
+            local items = get_list_of_items_to_craft(player)
+            for _, item in pairs(items) do
+                if flag then
+                    local recipes = global.cached_recipes_by_product[item.name]
+                    if recipes then
+                        for _, recipe in pairs(recipes) do
+                            local craftable_count = player.get_craftable_count(recipe.name)
+                            if player.force.recipes[recipe.name].enabled and craftable_count > 0 then
+                                local amount = 1
+                                for _, product in pairs(recipe.products) do
+                                    if product.name == item.name then
+                                        amount = product.amount or 1
+                                    end
                                 end
+                                craftable_count = craftable_count * amount
+                                local max_craft = player.mod_settings['hhr-max-craft-at-a-time'].value * amount
+
+                                if max_craft > 0 and craftable_count > max_craft then craftable_count = max_craft end
+
+                                -- Make sure we dont over craft an item
+                                if craftable_count > (item.target - item.current) then
+                                    craftable_count = (item.target - item.current)
+                                end
+
+                                craftable_count = craftable_count / amount
+                                if craftable_count < 1 then craftable_count = 1 end
+                                player.begin_crafting { count = craftable_count, recipe = recipe.name, silent = true }
+                                global.player_current_job[player.index] = recipe
+                                flag = false
+                                break
                             end
-                            craftable_count = craftable_count * amount
-                            local max_craft = player.mod_settings['hhr-max-craft-at-a-time'].value * amount
-
-                            if max_craft > 0 and craftable_count > max_craft then craftable_count = max_craft end
-
-                            -- Make sure we dont over craft an item
-                            if craftable_count > (item.target - item.current) then
-                                craftable_count = (item.target - item.current)
-                            end
-
-                            craftable_count = craftable_count / amount
-                            if craftable_count < 1 then craftable_count = 1 end
-                            player.begin_crafting { count = craftable_count, recipe = recipe.name, silent = true }
-                            flag = false
-                            break
                         end
                     end
                 end
@@ -145,7 +166,7 @@ function Smarts.on_nth_tick(event)
 
     local enabled_players = {}
     for _, player in pairs(game.connected_players) do
-        if global.check_player[player.index] and player.crafting_queue_size == 0 then
+        if global.check_player[player.index] and (player.crafting_queue_size == 0 or global.check_player_cancelled_crafting[player.index]) then
             table.insert(enabled_players, player)
         end
     end
@@ -157,9 +178,10 @@ function Smarts.on_nth_tick(event)
     end
 end
 
+---Crafting was cancelled by player or script
+---@param event EventData.on_player_cancelled_crafting
 function Smarts.on_player_cancelled_crafting(event)
-    local player = game.get_player(event.player_index)
-    disable_autocraft(player)
+    global.check_player_cancelled_crafting[event.player_index] = true
 end
 
 function Smarts.on_player_respawned(event)
