@@ -1,6 +1,7 @@
 local Smarts = require("smarts")
 
 local function init_globals()
+    global.debug = global.debug or {}
     global.cached_recipes_by_product = Smarts.cache_recipes_by_product()
     global.cached_quickbar_slot_data = Smarts.cache_quick_bar_data()
 
@@ -35,3 +36,6 @@ script.on_event(defines.events.on_pre_player_died, Smarts.on_pre_player_died)
 
 script.on_event(defines.events.on_player_set_quick_bar_slot, Smarts.on_player_set_quick_bar_slot)
 script.on_event(defines.events.on_lua_shortcut, Smarts.on_lua_shortcut)
+
+commands.add_command("HandyHandsToggleDebug", nil, Smarts.toggle_debug)
+commands.add_command("HandyHandsToggleDumpGlobals", nil, Smarts.dump_globals)

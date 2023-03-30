@@ -4,6 +4,41 @@ local Smarts = {}
 Smarts.SHORTCUT_NAME = 'hhr-handyhands-toggle'
 Smarts.NTH_TICK = settings.startup["hhr-nth-tick"].value
 
+local function logger(msg)
+    if global.debug and #global.debug > 0 then
+        for idx, flag in pairs(global.debug) do
+            if flag then
+                local player = game.get_player(idx)
+                if player then
+                    player.print(msg)
+                    game.write_file("HandyHandsRefactored.txt", msg, true, idx)
+                end
+            end
+        end
+    end
+end
+
+local function dump_items_to_craft(player, items)
+    if global.debug and #global.debug > 0 then
+        for idx, flag in pairs(global.debug) do
+            game.write_file("list_of_items_to_craft_" .. player.name .. ".json", game.table_to_json(items), false, idx)
+        end
+    end
+end
+
+function Smarts.dump_globals(event)
+    if global.player_current_job and #global.player_current_job > 0 then
+        local data = {}
+        for idx, recipe in pairs(global.player_current_job) do
+            data[idx] = recipe.name
+        end
+        game.write_file("player_current_job.json", serpent.block(data), false, event.player_index)
+    end
+
+    game.write_file("check_player.json", serpent.block(global.check_player), false, event.player_index)
+    game.write_file("check_player_cancelled_crafting.json", serpent.block(global.check_player_cancelled_crafting), false, event.player_index)
+end
+
 local function cache_player_quick_bar_data(player)
     local items = {}
     local quick_bar_rows = player.mod_settings['hhr-quickbar-rows-to-read'].value
@@ -99,7 +134,7 @@ end
 ---Check if the player should perform any work
 ---@param player LuaPlayer
 local function check_player(player)
-    -- game.print("check_player " .. " " .. game.tick .. " " .. player.name)
+    logger(game.tick .. " " .. " check_player " .. player.name)
     if player.connected and player.controller_type == defines.controllers.character and player.ticks_to_respawn == nil then
         if global.check_player_cancelled_crafting[player.index] then
             if global.player_current_job[player.index] then
@@ -122,6 +157,8 @@ local function check_player(player)
             global.player_current_job[player.index] = nil
             local flag = true
             local items = get_list_of_items_to_craft(player)
+            logger(game.tick .. " " .. " get_list_of_items_to_craft queue length = " .. #items)
+            dump_items_to_craft(player, items)
             for _, item in pairs(items) do
                 if flag then
                     local recipes = global.cached_recipes_by_product[item.name]
@@ -147,6 +184,8 @@ local function check_player(player)
 
                                 craftable_count = craftable_count / amount
                                 if craftable_count < 1 then craftable_count = 1 end
+
+                                logger(game.tick .. " " .. " begin_crafting " .. recipe.name .. " count=" .. tostring(craftable_count))
                                 player.begin_crafting { count = craftable_count, recipe = recipe.name, silent = true }
                                 global.player_current_job[player.index] = recipe
                                 flag = false
@@ -164,7 +203,6 @@ end
 ---@param event EventData.on_tick
 function Smarts.on_nth_tick(event)
     local slot = math.floor(game.tick / Smarts.NTH_TICK)
-    -- game.print("on_nth_tick .. " .. event.tick .. " slot .. " .. slot)
 
     local enabled_players = {}
     for _, player in pairs(game.connected_players) do
@@ -230,21 +268,13 @@ function Smarts.cache_quick_bar_data()
     return cache
 end
 
--- ---comment
--- ---@param event EventData.on_player_ammo_inventory_changed
--- function Smarts.on_player_ammo_inventory_changed(event)
---     local player = game.get_player(event.player_index)
---     if player and player.mod_settings['hhr-autocraft-ammo-slots'].value then
---         global.cached_ammo_slot_data[player.index] = cache_player_ammo_slot_data(player)
---     end
--- end
-
--- function Smarts.cache_ammo_slot_data()
---     local cache = global.cached_ammo_slot_data or {}
---     for _, player in pairs(game.players) do
---         cache[player.index] = cache_player_ammo_slot_data(player)
---     end
---     return cache
--- end
+function Smarts.toggle_debug(event)
+    local player = game.get_player(event.player_index)
+    if player then
+        global.debug[player.index] = global.debug[player.index] or false
+        global.debug[player.index] = not (global.debug[player.index])
+        player.print("HandyHands debugging : " .. tostring(global.debug[player.index]))
+    end
+end
 
 return Smarts
