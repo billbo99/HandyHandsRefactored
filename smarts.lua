@@ -105,9 +105,11 @@ local function check_player(player)
             if global.player_current_job[player.index] then
                 local target = global.player_current_job[player.index]
                 local found = false
-                for _, recipe in pairs(player.crafting_queue) do
-                    if recipe.recipe == target.name then
-                        found = true
+                if player.crafting_queue and #player.crafting_queue > 0 then
+                    for _, recipe in pairs(player.crafting_queue) do
+                        if recipe.recipe == target.name then
+                            found = true
+                        end
                     end
                 end
                 if found then
