@@ -100,7 +100,7 @@ end
 ---@param player LuaPlayer
 local function check_player(player)
     -- game.print("check_player " .. " " .. game.tick .. " " .. player.name)
-    if player.connected and player.controller_type == defines.controllers.character then
+    if player.connected and player.controller_type == defines.controllers.character and player.ticks_to_respawn == nil then
         if global.check_player_cancelled_crafting[player.index] then
             if global.player_current_job[player.index] then
                 local target = global.player_current_job[player.index]
@@ -184,7 +184,7 @@ function Smarts.on_player_cancelled_crafting(event)
     global.check_player_cancelled_crafting[event.player_index] = true
 end
 
-function Smarts.on_player_respawned(event)
+function Smarts.on_pre_player_died(event)
     local player = game.get_player(event.player_index)
     disable_autocraft(player)
 end

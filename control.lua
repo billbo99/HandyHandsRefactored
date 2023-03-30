@@ -31,6 +31,7 @@ script.on_configuration_changed(on_configuration_changed)
 
 script.on_nth_tick(Smarts.NTH_TICK, Smarts.on_nth_tick)
 script.on_event(defines.events.on_player_cancelled_crafting, Smarts.on_player_cancelled_crafting)
+script.on_event(defines.events.on_pre_player_died, Smarts.on_pre_player_died)
 
 script.on_event(defines.events.on_player_set_quick_bar_slot, Smarts.on_player_set_quick_bar_slot)
 script.on_event(defines.events.on_lua_shortcut, Smarts.on_lua_shortcut)
