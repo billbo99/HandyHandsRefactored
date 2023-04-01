@@ -38,4 +38,5 @@ script.on_event(defines.events.on_player_set_quick_bar_slot, Smarts.on_player_se
 script.on_event(defines.events.on_lua_shortcut, Smarts.on_lua_shortcut)
 
 commands.add_command("HandyHandsToggleDebug", nil, Smarts.toggle_debug)
+commands.add_command("HandyHandsToggleReset", nil, Smarts.reset_globals)
 commands.add_command("HandyHandsToggleDumpGlobals", nil, Smarts.dump_globals)

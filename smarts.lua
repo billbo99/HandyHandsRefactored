@@ -236,6 +236,10 @@ function Smarts.on_lua_shortcut(event)
     local player = game.get_player(event.player_index)
     if player then
         global.check_player[player.index] = not (player.is_shortcut_toggled(Smarts.SHORTCUT_NAME))
+
+        global.player_current_job[player.index] = nil
+        global.check_player_cancelled_crafting[player.index] = nil
+
         player.set_shortcut_toggled(Smarts.SHORTCUT_NAME, global.check_player[player.index])
     end
 end
@@ -266,6 +270,14 @@ function Smarts.cache_quick_bar_data()
         cache[player.index] = cache_player_quick_bar_data(player)
     end
     return cache
+end
+
+function Smarts.reset_globals(event)
+    local player = game.get_player(event.player_index)
+    if player and player.admin then
+        global.player_current_job = {}
+        global.check_player_cancelled_crafting = {}
+    end
 end
 
 function Smarts.toggle_debug(event)
