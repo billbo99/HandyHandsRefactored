@@ -4,6 +4,14 @@ local Smarts = {}
 Smarts.SHORTCUT_NAME = 'hhr-handyhands-toggle'
 Smarts.NTH_TICK = settings.startup["hhr-nth-tick"].value
 
+local function player_valid(player)
+    if player and player.connected and player.controller_type == defines.controllers.character and player.ticks_to_respawn == nil then
+        return true
+    else
+        return false
+    end
+end
+
 local function logger(msg)
     if global.debug and #global.debug > 0 then
         for idx, flag in pairs(global.debug) do
@@ -106,6 +114,60 @@ local function get_list_of_items_to_craft(player)
         end
     end
 
+    -- Check players hand contents
+    local player_cursor = player.cursor_stack
+    if player_cursor and player_cursor.valid and player_cursor.valid_for_read then
+        if items[player_cursor.name] then
+            if not (items[player_cursor.name].current) then items[player_cursor.name].current = 0 end
+            items[player_cursor.name].current = items[player_cursor.name].current + player_cursor.count
+            print("here")
+        end
+    end
+
+    -- Check players hand for ghost
+    local cursor_ghost = player.cursor_ghost
+    if cursor_ghost and cursor_ghost.valid then
+        if not (items[cursor_ghost.name]) then
+            items[cursor_ghost.name] = { current = 0, target = 1 }
+        end
+    end
+
+
+    -- local logi_network = player.surface.find_logistic_networks_by_construction_area(player.position, player.force)
+    -- for _, network in pairs(logi_network) do
+    --     for _, cell in pairs(network.cells) do
+
+    if player.character.allow_dispatching_robots then
+        local cell = player.character.logistic_cell
+        if cell and cell.mobile and cell.transmitting and cell.owner and cell.owner.player == player then
+            local x1 = cell.owner.position.x - cell.construction_radius + 1
+            local y1 = cell.owner.position.y - cell.construction_radius + 1
+            local x2 = cell.owner.position.x + cell.construction_radius - 1
+            local y2 = cell.owner.position.y + cell.construction_radius - 1
+            entities = cell.owner.surface.find_entities_filtered { area = { { x1, y1 }, { x2, y2 } }, name = "entity-ghost", type = "entity-ghost" }
+            if entities ~= nil and #entities > 0 then
+                for _, entity in pairs(entities) do
+                    if not (items[entity.ghost_name]) then
+                        items[entity.ghost_name] = { current = 0, target = 0 }
+                    end
+                    items[entity.ghost_name].target = items[entity.ghost_name].target + 1
+                end
+                for _, robot in pairs(player.character.logistic_network.construction_robots) do
+                    local robot_inv = robot.get_inventory(defines.inventory.robot_cargo)
+                    for item, data in pairs(items) do
+                        if data.current then
+                            data.current = data.current + robot_inv.get_item_count(item)
+                        else
+                            data.current = robot_inv.get_item_count(item)
+                        end
+                    end
+                end
+            end
+        end
+    end
+    --     end
+    -- end
+
     -- Process inventory
     local inv = player.get_main_inventory()
     for item, data in pairs(items) do
@@ -206,7 +268,7 @@ function Smarts.on_nth_tick(event)
 
     local enabled_players = {}
     for _, player in pairs(game.connected_players) do
-        if global.check_player[player.index] and (player.crafting_queue_size == 0 or global.check_player_cancelled_crafting[player.index]) then
+        if player_valid(player) and global.check_player[player.index] and (player.crafting_queue_size == 0 or global.check_player_cancelled_crafting[player.index]) then
             table.insert(enabled_players, player)
         end
     end

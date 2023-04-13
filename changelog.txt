@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.6
+Date: 2023-04-13
+  Bugfixes:
+    - Fixed "no crafting queue" bug
+    - Take into account contents of players hand when looking for items to craft
+  Changes:
+    - If the player has a ghost in hand and we can craft it, we will
+    - If the player has character has a personal logistics network and the roboport is enabled,  look for ghosts we can craft.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.5
 Date: 2023-04-01
   Bugfixes:
