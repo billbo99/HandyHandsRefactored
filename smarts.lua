@@ -77,6 +77,13 @@ end
 local function get_list_of_items_to_craft(player)
     local items = {}
 
+    local function update_item(item, count)
+        if not (items[item]) then
+            items[item] = { current = 0, target = 0 }
+        end
+        items[item].target = items[item].target + count
+    end
+
     -- Check quickbar
     if player.mod_settings['hhr-autocraft-quickbar-slots'].value then
         local quickbar = global.cached_quickbar_slot_data[player.index] or cache_player_quick_bar_data(player)
@@ -144,22 +151,71 @@ local function get_list_of_items_to_craft(player)
             local y1 = cell.owner.position.y - cell.construction_radius + 1
             local x2 = cell.owner.position.x + cell.construction_radius - 1
             local y2 = cell.owner.position.y + cell.construction_radius - 1
-            entities = cell.owner.surface.find_entities_filtered { area = { { x1, y1 }, { x2, y2 } }, name = "entity-ghost", type = "entity-ghost" }
-            if entities ~= nil and #entities > 0 then
-                for _, entity in pairs(entities) do
-                    if not (items[entity.ghost_name]) then
-                        items[entity.ghost_name] = { current = 0, target = 0 }
-                    end
-                    items[entity.ghost_name].target = items[entity.ghost_name].target + 1
-                end
-                for _, robot in pairs(player.character.logistic_network.construction_robots) do
-                    local robot_inv = robot.get_inventory(defines.inventory.robot_cargo)
-                    for item, data in pairs(items) do
-                        if data.current then
-                            data.current = data.current + robot_inv.get_item_count(item)
-                        else
-                            data.current = robot_inv.get_item_count(item)
+
+            if player.mod_settings['hhr-autocraft-ghosts'].value then
+                -- Find what is needed to place a ghost entity
+                local ghost_entities = cell.owner.surface.find_entities_filtered { area = { { x1, y1 }, { x2, y2 } }, name = "entity-ghost", type = "entity-ghost" }
+                if ghost_entities ~= nil and #ghost_entities > 0 then
+                    for _, entity in pairs(ghost_entities) do
+                        if entity.ghost_prototype.items_to_place_this then
+                            for _, v in pairs(entity.ghost_prototype.items_to_place_this) do
+                                update_item(v.name, v.count)
+                            end
                         end
+                    end
+                end
+            end
+
+            if player.mod_settings['hhr-autocraft-upgrades'].value then
+                -- Find what is needed to be upgraded
+                local upgrade_entities = cell.owner.surface.find_entities_filtered { area = { { x1, y1 }, { x2, y2 } }, to_be_upgraded = true }
+                if upgrade_entities ~= nil and #upgrade_entities > 0 then
+                    for _, entity in pairs(upgrade_entities) do
+                        local upgrade = entity.get_upgrade_target()
+                        if upgrade ~= nil then
+                            update_item(upgrade.name, 1)
+                        end
+                    end
+                end
+            end
+
+            if player.mod_settings['hhr-autocraft-tiles'].value then
+                -- Find what ghost tiles need to be crafted
+                local tile_entities = cell.owner.surface.find_entities_filtered { area = { { x1, y1 }, { x2, y2 } }, name = "tile-ghost", type = "tile-ghost" }
+                if tile_entities ~= nil and #tile_entities > 0 then
+                    for _, entity in pairs(tile_entities) do
+                        if entity.ghost_prototype.items_to_place_this then
+                            for _, v in pairs(entity.ghost_prototype.items_to_place_this) do
+                                update_item(v.name, v.count)
+                            end
+                        end
+                    end
+                end
+            end
+
+            if player.mod_settings['hhr-autocraft-requests'].value then
+                -- Look for any outstanding proxy requests
+                item_requests = cell.owner.surface.find_entities_filtered { area = { { x1, y1 }, { x2, y2 } }, name = "item-request-proxy" }
+                if item_requests ~= nil and #item_requests > 0 then
+                    for _, entity in pairs(item_requests) do
+                        local requests = entity.item_requests
+                        if requests ~= nil then
+                            for name, count in pairs(requests) do
+                                update_item(name, count)
+                            end
+                        end
+                    end
+                end
+            end
+
+            -- check robots inventory for items they are holding
+            for _, robot in pairs(player.character.logistic_network.construction_robots) do
+                local robot_inv = robot.get_inventory(defines.inventory.robot_cargo)
+                for item, data in pairs(items) do
+                    if data.current then
+                        data.current = data.current + robot_inv.get_item_count(item)
+                    else
+                        data.current = robot_inv.get_item_count(item)
                     end
                 end
             end

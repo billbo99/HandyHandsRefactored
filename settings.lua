@@ -15,7 +15,7 @@ data:extend({
         default_value = 2,
         minimum_value = 0,
         maximum_value = 10,
-        order = "110"
+        order = "300"
     },
     {
         type = "bool-setting",
@@ -37,6 +37,34 @@ data:extend({
         setting_type = "runtime-per-user",
         default_value = true,
         order = "101"
+    },
+    {
+        type = "bool-setting",
+        name = "hhr-autocraft-ghosts",
+        setting_type = "runtime-per-user",
+        default_value = true,
+        order = "111"
+    },
+    {
+        type = "bool-setting",
+        name = "hhr-autocraft-upgrades",
+        setting_type = "runtime-per-user",
+        default_value = true,
+        order = "112"
+    },
+    {
+        type = "bool-setting",
+        name = "hhr-autocraft-tiles",
+        setting_type = "runtime-per-user",
+        default_value = true,
+        order = "113"
+    },
+    {
+        type = "bool-setting",
+        name = "hhr-autocraft-requests",
+        setting_type = "runtime-per-user",
+        default_value = true,
+        order = "114"
     },
     {
         type = "int-setting",

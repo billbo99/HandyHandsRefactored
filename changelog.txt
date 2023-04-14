@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.8
+Date: 2023-04-14
+  Changes:
+    - Added some more player settings to allow a taylored experience
+    - Autocrafting extended to upgrades, tiles and proxy requests along with ghosts
+---------------------------------------------------------------------------------------------------
+Version: 1.1.7
+Date: 2023-04-13
+  Bugfixes:
+    - Fixed not checking what items are needed to place an entity.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.6
 Date: 2023-04-13
   Bugfixes:
