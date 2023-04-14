@@ -127,7 +127,6 @@ local function get_list_of_items_to_craft(player)
         if items[player_cursor.name] then
             if not (items[player_cursor.name].current) then items[player_cursor.name].current = 0 end
             items[player_cursor.name].current = items[player_cursor.name].current + player_cursor.count
-            print("here")
         end
     end
 
