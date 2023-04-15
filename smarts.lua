@@ -207,6 +207,21 @@ local function get_list_of_items_to_craft(player)
                 end
             end
 
+            -- Clean up requests based on items needed to place entities
+            for item, data in pairs(items) do
+                local entity_prototype = game.entity_prototypes[item]
+                if entity_prototype then
+                    if entity_prototype.items_to_place_this then
+                        for _, v in pairs(entity_prototype.items_to_place_this) do
+                            update_item(v.name, v.count)
+                            if v.name ~= item then
+                                items[item] = nil
+                            end
+                        end
+                    end
+                end
+            end
+
             -- check robots inventory for items they are holding
             for _, robot in pairs(player.character.logistic_network.construction_robots) do
                 local robot_inv = robot.get_inventory(defines.inventory.robot_cargo)
