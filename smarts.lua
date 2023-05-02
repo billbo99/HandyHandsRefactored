@@ -5,7 +5,11 @@ Smarts.SHORTCUT_NAME = 'hhr-handyhands-toggle'
 Smarts.NTH_TICK = settings.startup["hhr-nth-tick"].value
 
 local function player_valid(player)
-    if player and player.connected and player.controller_type == defines.controllers.character and player.ticks_to_respawn == nil then
+    local has_valid_controller =
+        player.controller_type == defines.controllers.character
+        or player.controller_type == defines.controllers.god
+
+    if player and player.connected and has_valid_controller and player.ticks_to_respawn == nil then
         return true
     else
         return false
@@ -143,7 +147,9 @@ local function get_list_of_items_to_craft(player)
     -- for _, network in pairs(logi_network) do
     --     for _, cell in pairs(network.cells) do
 
-    if player.character.allow_dispatching_robots then
+    -- player.character is nil e.g. in sandbox mode where the played does not
+    -- control a character.
+    if player.character and player.character.allow_dispatching_robots then
         local cell = player.character.logistic_cell
         if cell and cell.mobile and cell.transmitting and cell.owner and cell.owner.player == player then
             local x1 = cell.owner.position.x - cell.construction_radius + 1
