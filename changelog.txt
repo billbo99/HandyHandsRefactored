@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.1
+Date: 2024-10-24
+  Bugfixes:
+    - HandyHandsRefactored/smarts.lua:84: attempt to perform arithmetic on local 'count' (a table value)
+    - Crafting more than needed
+---------------------------------------------------------------------------------------------------
+Version: 2.0.0
+Date: 2024-10-06
+  Changes:
+    - Updated for Factorio 2
+---------------------------------------------------------------------------------------------------
 Version: 1.2.0
 Date: 2023-04-15
   Bugfixes:

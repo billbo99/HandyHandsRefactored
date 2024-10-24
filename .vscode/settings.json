@@ -1,0 +1,44 @@
+{
+    "Lua.diagnostics.globals": [
+        "mods",
+        "table_size",
+        "log",
+        "localised_print",
+        "serpent",
+        "__DebugAdapter",
+        "__Profiler",
+        "global"
+    ],
+    "Lua.runtime.version": "Lua 5.2",
+    "Lua.workspace.library": [
+        "D:\\apps\\Factorio_EI3\\mods",
+        "D:\\apps\\Factorio_EI3\\data",
+        "D:\\apps\\Factorio_EI3\\data\\core\\lualib",
+        "d:\\dev\\code\\.factorio",
+        "c:/Users/billbo/AppData/Roaming/Code/User/workspaceStorage/9b48538b2b71848a03c57126d9ea77d7/justarandomgeek.factoriomod-debug/sumneko-3rd/factorio/library",
+        "c:/Users/billbo/AppData/Roaming/Code/User/workspaceStorage/e9b0018b37c774ecd0d034703ab4c556/justarandomgeek.factoriomod-debug/sumneko-3rd/factorio/library",
+        "c:/Users/billbo/AppData/Roaming/Code/User/workspaceStorage/4589d7af51aaa3b3b64d4bebc7a0068e/justarandomgeek.factoriomod-debug/sumneko-3rd/factorio/library",
+        "d:\\dev\\server.latest\\data"
+    ],
+    "Lua.workspace.userThirdParty": [
+        "c:\\Users\\billbo\\AppData\\Roaming\\Code\\User\\workspaceStorage\\4589d7af51aaa3b3b64d4bebc7a0068e\\justarandomgeek.factoriomod-debug\\sumneko-3rd"
+    ],
+    "Lua.runtime.builtin": {
+        "io": "disable",
+        "os": "disable",
+        "math": "disable",
+        "debug": "disable",
+        "coroutine": "disable",
+        "package": "disable"
+    },
+    "Lua.runtime.special": [],
+    "Lua.runtime.plugin": "c:/Users/billbo/AppData/Roaming/Code/User/workspaceStorage/4589d7af51aaa3b3b64d4bebc7a0068e/justarandomgeek.factoriomod-debug/sumneko-3rd/factorio/plugin.lua",
+    "factorio.versions": [
+        {
+            "name": "1.2",
+            "factorioPath": "d:\\dev\\server.latest\\bin\\x64\\factorio.exe",
+            "active": true
+        }
+    ],
+    "Lua.workspace.checkThirdParty": "ApplyInMemory",
+}

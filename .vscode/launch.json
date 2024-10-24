@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "factoriomod",
+            "request": "launch",
+            "name": "Factorio Mod Debug",
+            "modsPath": "d:/dev/mods_Death_Counter",
+            // "hookMode": "debug",
+            "hookControl": [
+                "HandyHandsRefactored",
+            ],
+            // "profileTree": true,
+            // "profileFuncs": true,
+            // "profileUpdateRate": 60
+        },
+    ]
+}

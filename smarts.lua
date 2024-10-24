@@ -13,13 +13,13 @@ local function player_valid(player)
 end
 
 local function logger(msg)
-    if global.debug and #global.debug > 0 then
-        for idx, flag in pairs(global.debug) do
+    if storage.debug and #storage.debug > 0 then
+        for idx, flag in pairs(storage.debug) do
             if flag then
                 local player = game.get_player(idx)
                 if player then
                     player.print(msg)
-                    game.write_file("HandyHandsRefactored.txt", msg, true, idx)
+                    helpers.write_file("HandyHandsRefactored.txt", msg, true, idx)
                 end
             end
         end
@@ -27,24 +27,24 @@ local function logger(msg)
 end
 
 local function dump_items_to_craft(player, items)
-    if global.debug and #global.debug > 0 then
-        for idx, flag in pairs(global.debug) do
-            game.write_file("list_of_items_to_craft_" .. player.name .. ".json", game.table_to_json(items), false, idx)
+    if storage.debug and #storage.debug > 0 then
+        for idx, flag in pairs(storage.debug) do
+            helpers.write_file("list_of_items_to_craft_" .. player.name .. ".json", helpers.table_to_json(items), false, idx)
         end
     end
 end
 
 function Smarts.dump_globals(event)
-    if global.player_current_job and #global.player_current_job > 0 then
+    if storage.player_current_job and #storage.player_current_job > 0 then
         local data = {}
-        for idx, recipe in pairs(global.player_current_job) do
+        for idx, recipe in pairs(storage.player_current_job) do
             data[idx] = recipe.name
         end
-        game.write_file("player_current_job.json", serpent.block(data), false, event.player_index)
+        helpers.write_file("player_current_job.json", serpent.block(data), false, event.player_index)
     end
 
-    game.write_file("check_player.json", serpent.block(global.check_player), false, event.player_index)
-    game.write_file("check_player_cancelled_crafting.json", serpent.block(global.check_player_cancelled_crafting), false, event.player_index)
+    helpers.write_file("check_player.json", serpent.block(storage.check_player), false, event.player_index)
+    helpers.write_file("check_player_cancelled_crafting.json", serpent.block(storage.check_player_cancelled_crafting), false, event.player_index)
 end
 
 local function cache_player_quick_bar_data(player)
@@ -67,26 +67,40 @@ end
 ---@param player LuaPlayer?
 local function disable_autocraft(player)
     if player and player.connected then
-        global.check_player[player.index] = false
-        global.player_current_job[player.index] = nil
-        global.check_player_cancelled_crafting[player.index] = nil
-        player.set_shortcut_toggled(Smarts.SHORTCUT_NAME, global.check_player[player.index])
+        storage.check_player[player.index] = false
+        storage.player_current_job[player.index] = nil
+        storage.check_player_cancelled_crafting[player.index] = nil
+        player.set_shortcut_toggled(Smarts.SHORTCUT_NAME, storage.check_player[player.index])
     end
 end
 
 local function get_list_of_items_to_craft(player)
     local items = {}
 
-    local function update_item(item, count)
-        if not (items[item]) then
-            items[item] = { current = 0, target = 0 }
+    local function update_item(item, count, quality)
+        local name
+        if quality then
+            name = item
+        else
+            name = item
         end
-        items[item].target = items[item].target + count
+        if not (items[name]) then
+            items[name] = { current = 0, target = 0 }
+        end
+        items[name].target = items[name].target + count
     end
+
+    -- Check current crafting queue
+    if player.crafting_queue and #player.crafting_queue > 0 then
+        for _, recipe in pairs(player.crafting_queue) do
+            player.print(recipe)
+        end
+    end
+
 
     -- Check quickbar
     if player.mod_settings['hhr-autocraft-quickbar-slots'].value then
-        local quickbar = global.cached_quickbar_slot_data[player.index] or cache_player_quick_bar_data(player)
+        local quickbar = storage.cached_quickbar_slot_data[player.index] or cache_player_quick_bar_data(player)
         for k, v in pairs(quickbar) do
             items[k] = table.deepcopy(v)
         end
@@ -95,16 +109,17 @@ local function get_list_of_items_to_craft(player)
     -- Check ammo
     if player.mod_settings['hhr-autocraft-ammo-slots'].value then
         local ammo_bar = player.get_inventory(defines.inventory.character_ammo)
-        for ammo_name, ammo_count in pairs(ammo_bar.get_contents()) do
-            local item = game.item_prototypes[ammo_name]
-            items[ammo_name] = { current = ammo_count, target = item.stack_size }
+        for _, _dict in pairs(ammo_bar.get_contents()) do
+            local item = prototypes.item[_dict.name]
+            local _key = _dict.name
+            items[_key] = { current = _dict.count, target = item.stack_size }
         end
 
         if ammo_bar.is_filtered() then
             for i = 1, #ammo_bar do
                 local ammo_name = ammo_bar.get_filter(i)
                 if ammo_name then
-                    local item = game.item_prototypes[ammo_name]
+                    local item = prototypes.item[ammo_name]
                     items[ammo_name] = { target = item.stack_size }
                 end
             end
@@ -113,10 +128,11 @@ local function get_list_of_items_to_craft(player)
 
     -- Check logistics
     if player.mod_settings['hhr-autocraft-logistics-slots'].value then
-        for i = 1, player.character.request_slot_count do
-            local slot = player.get_personal_logistic_slot(i)
-            if slot.min > 0 then
-                items[slot.name] = { target = slot.min }
+        if player.character.get_requester_point() and player.character.get_requester_point().enabled and player.character.get_requester_point().filters then
+            for _, slot in pairs(player.character.get_requester_point().filters) do
+                if slot.count > 0 then
+                    items[slot.name] = { target = slot.count }
+                end
             end
         end
     end
@@ -137,11 +153,6 @@ local function get_list_of_items_to_craft(player)
             items[cursor_ghost.name] = { current = 0, target = 1 }
         end
     end
-
-
-    -- local logi_network = player.surface.find_logistic_networks_by_construction_area(player.position, player.force)
-    -- for _, network in pairs(logi_network) do
-    --     for _, cell in pairs(network.cells) do
 
     if player.character.allow_dispatching_robots then
         local cell = player.character.logistic_cell
@@ -199,8 +210,8 @@ local function get_list_of_items_to_craft(player)
                     for _, entity in pairs(item_requests) do
                         local requests = entity.item_requests
                         if requests ~= nil then
-                            for name, count in pairs(requests) do
-                                update_item(name, count)
+                            for idx, row in pairs(requests) do
+                                update_item(row.name, row.count, row.quality)
                             end
                         end
                     end
@@ -209,11 +220,11 @@ local function get_list_of_items_to_craft(player)
 
             -- Clean up requests based on items needed to place entities
             for item, data in pairs(items) do
-                local entity_prototype = game.entity_prototypes[item]
+                local entity_prototype = prototypes.entity[item]
                 if entity_prototype then
                     if entity_prototype.items_to_place_this then
                         for _, v in pairs(entity_prototype.items_to_place_this) do
-                            update_item(v.name, v.count)
+                            update_item(v.name, 0)
                             if v.name ~= item then
                                 items[item] = nil
                             end
@@ -268,9 +279,9 @@ end
 local function check_player(player)
     logger(game.tick .. " " .. " check_player " .. player.name)
     if player.connected and player.controller_type == defines.controllers.character and player.ticks_to_respawn == nil then
-        if global.check_player_cancelled_crafting[player.index] then
-            if global.player_current_job[player.index] then
-                local target = global.player_current_job[player.index]
+        if storage.check_player_cancelled_crafting[player.index] then
+            if storage.player_current_job[player.index] then
+                local target = storage.player_current_job[player.index]
                 local found = false
                 if player.crafting_queue and #player.crafting_queue > 0 then
                     for _, recipe in pairs(player.crafting_queue) do
@@ -280,20 +291,22 @@ local function check_player(player)
                     end
                 end
                 if found then
-                    global.check_player_cancelled_crafting[player.index] = nil
+                    storage.check_player_cancelled_crafting[player.index] = nil
                 else
                     disable_autocraft(player)
                 end
+            else
+                storage.check_player_cancelled_crafting[player.index] = nil
             end
         else
-            global.player_current_job[player.index] = nil
+            storage.player_current_job[player.index] = nil
             local flag = true
             local items = get_list_of_items_to_craft(player)
             logger(game.tick .. " " .. " get_list_of_items_to_craft queue length = " .. #items)
             dump_items_to_craft(player, items)
             for _, item in pairs(items) do
                 if flag then
-                    local recipes = global.cached_recipes_by_product[item.name]
+                    local recipes = storage.cached_recipes_by_product[item.name]
                     if recipes then
                         for _, recipe in pairs(recipes) do
                             local craftable_count = player.get_craftable_count(recipe.name)
@@ -319,7 +332,7 @@ local function check_player(player)
 
                                 logger(game.tick .. " " .. " begin_crafting " .. recipe.name .. " count=" .. tostring(craftable_count))
                                 player.begin_crafting { count = craftable_count, recipe = recipe.name, silent = true }
-                                global.player_current_job[player.index] = recipe
+                                storage.player_current_job[player.index] = recipe
                                 flag = false
                                 break
                             end
@@ -338,7 +351,7 @@ function Smarts.on_nth_tick(event)
 
     local enabled_players = {}
     for _, player in pairs(game.connected_players) do
-        if player_valid(player) and global.check_player[player.index] and (player.crafting_queue_size == 0 or global.check_player_cancelled_crafting[player.index]) then
+        if player_valid(player) and storage.check_player[player.index] and (player.crafting_queue_size == 0 or storage.check_player_cancelled_crafting[player.index]) then
             table.insert(enabled_players, player)
         end
     end
@@ -353,7 +366,7 @@ end
 ---Crafting was cancelled by player or script
 ---@param event EventData.on_player_cancelled_crafting
 function Smarts.on_player_cancelled_crafting(event)
-    global.check_player_cancelled_crafting[event.player_index] = true
+    storage.check_player_cancelled_crafting[event.player_index] = true
 end
 
 function Smarts.on_pre_player_died(event)
@@ -367,18 +380,18 @@ function Smarts.on_lua_shortcut(event)
     if event.prototype_name ~= Smarts.SHORTCUT_NAME then return end
     local player = game.get_player(event.player_index)
     if player then
-        global.check_player[player.index] = not (player.is_shortcut_toggled(Smarts.SHORTCUT_NAME))
+        storage.check_player[player.index] = not (player.is_shortcut_toggled(Smarts.SHORTCUT_NAME))
 
-        global.player_current_job[player.index] = nil
-        global.check_player_cancelled_crafting[player.index] = nil
+        storage.player_current_job[player.index] = nil
+        storage.check_player_cancelled_crafting[player.index] = nil
 
-        player.set_shortcut_toggled(Smarts.SHORTCUT_NAME, global.check_player[player.index])
+        player.set_shortcut_toggled(Smarts.SHORTCUT_NAME, storage.check_player[player.index])
     end
 end
 
 function Smarts.cache_recipes_by_product()
     local cache = {}
-    for _, proto in pairs(game.get_filtered_recipe_prototypes({ { filter = "has-product-item" } })) do
+    for _, proto in pairs(prototypes.get_recipe_filtered({ { filter = "has-product-item" } })) do
         for _, product in ipairs(proto.products) do
             cache[product.name] = cache[product.name] or {}
             table.insert(cache[product.name], proto)
@@ -392,12 +405,12 @@ end
 function Smarts.on_player_set_quick_bar_slot(event)
     local player = game.get_player(event.player_index)
     if player and player.mod_settings['hhr-autocraft-quickbar-slots'].value then
-        global.cached_quickbar_slot_data[player.index] = cache_player_quick_bar_data(player)
+        storage.cached_quickbar_slot_data[player.index] = cache_player_quick_bar_data(player)
     end
 end
 
 function Smarts.cache_quick_bar_data()
-    local cache = global.cached_quickbar_slot_data or {}
+    local cache = storage.cached_quickbar_slot_data or {}
     for _, player in pairs(game.players) do
         cache[player.index] = cache_player_quick_bar_data(player)
     end
@@ -407,17 +420,17 @@ end
 function Smarts.reset_globals(event)
     local player = game.get_player(event.player_index)
     if player and player.admin then
-        global.player_current_job = {}
-        global.check_player_cancelled_crafting = {}
+        storage.player_current_job = {}
+        storage.check_player_cancelled_crafting = {}
     end
 end
 
 function Smarts.toggle_debug(event)
     local player = game.get_player(event.player_index)
     if player then
-        global.debug[player.index] = global.debug[player.index] or false
-        global.debug[player.index] = not (global.debug[player.index])
-        player.print("HandyHands debugging : " .. tostring(global.debug[player.index]))
+        storage.debug[player.index] = storage.debug[player.index] or false
+        storage.debug[player.index] = not (storage.debug[player.index])
+        player.print("HandyHands debugging : " .. tostring(storage.debug[player.index]))
     end
 end
 

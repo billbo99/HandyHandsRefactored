@@ -10,12 +10,9 @@ data:extend({
         name = "hhr-handyhands-toggle",
         action = "lua",
         toggleable = true,
-        icon = {
-            filename = "__HandyHandsRefactored__/graphics/icon/shortcut-toggle.png",
-            priority = "extra-high-no-scale",
-            size = 144,
-            scale = 0.2,
-            flags = { "icon" }
-        },
+        icon = "__HandyHandsRefactored__/graphics/icon/64.png",
+        icon_size = 64,
+        small_icon = "__HandyHandsRefactored__/graphics/icon/24.png",
+        small_icon_size = 24
     },
 })

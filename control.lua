@@ -1,18 +1,18 @@
 local Smarts = require("smarts")
 
 local function init_globals()
-    global.debug = global.debug or {}
-    global.cached_recipes_by_product = Smarts.cache_recipes_by_product()
-    global.cached_quickbar_slot_data = Smarts.cache_quick_bar_data()
+    storage.debug = storage.debug or {}
+    storage.cached_recipes_by_product = Smarts.cache_recipes_by_product()
+    storage.cached_quickbar_slot_data = Smarts.cache_quick_bar_data()
 
     -- Current recipe a player is crafting
-    global.player_current_job = global.player_current_job or {}
+    storage.player_current_job = storage.player_current_job or {}
 
     -- Boolean tracking of who has the mod enabled
-    global.check_player = global.check_player or {}
+    storage.check_player = storage.check_player or {}
 
     -- Boolean tracking of who might have cancelled some crafting
-    global.check_player_cancelled_crafting = global.check_player_cancelled_crafting or {}
+    storage.check_player_cancelled_crafting = storage.check_player_cancelled_crafting or {}
 end
 
 local function on_init()
