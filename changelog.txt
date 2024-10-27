@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.2
+Date: 2024-10-27
+  Changes:
+    - Fixed bug with ammo stack filters
+    - Fixed a bug with construction bots being crafted when they are out building things
+  Todo:
+    - Will be adding some smarts in the future when this API request is made .. https://forums.factorio.com/viewtopic.php?f=28&t=117875
+
+---------------------------------------------------------------------------------------------------
 Version: 2.0.1
 Date: 2024-10-24
   Bugfixes:

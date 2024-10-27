@@ -119,23 +119,24 @@ local function get_list_of_items_to_craft(player)
             for i = 1, #ammo_bar do
                 local ammo_name = ammo_bar.get_filter(i)
                 if ammo_name then
-                    local item = prototypes.item[ammo_name]
-                    items[ammo_name] = { target = item.stack_size }
+                    local item = prototypes.item[ammo_name.name]
+                    items[item.name] = { target = item.stack_size }
                 end
             end
         end
     end
 
-    -- Check logistics
-    if player.mod_settings['hhr-autocraft-logistics-slots'].value then
-        if player.character.get_requester_point() and player.character.get_requester_point().enabled and player.character.get_requester_point().filters then
-            for _, slot in pairs(player.character.get_requester_point().filters) do
-                if slot.count > 0 then
-                    items[slot.name] = { target = slot.count }
-                end
-            end
-        end
-    end
+    -- Check logistics -- waiting on https://forums.factorio.com/viewtopic.php?f=28&t=117875
+    -- if player.mod_settings['hhr-autocraft-logistics-slots'].value then
+    --     if player.character.get_requester_point() and player.character.get_requester_point().enabled and player.character.get_requester_point().filters then
+    --         for _, slot in pairs(player.character.get_requester_point().filters) do
+    --             if slot.count > 0 then
+    --                 local name = slot.name .. "^" .. slot.quality
+    --                 items[name] = { target = slot.count, quality=slot.quality }
+    --             end
+    --         end
+    --     end
+    -- end
 
     -- Check players hand contents
     local player_cursor = player.cursor_stack
@@ -154,6 +155,12 @@ local function get_list_of_items_to_craft(player)
         end
     end
 
+    if player.get_requester_point() then
+        for _, row in pairs(player.get_requester_point().targeted_items_deliver) do
+            print("hi")
+        end
+    end
+
     if player.character.allow_dispatching_robots then
         local cell = player.character.logistic_cell
         if cell and cell.mobile and cell.transmitting and cell.owner and cell.owner.player == player then
@@ -161,6 +168,14 @@ local function get_list_of_items_to_craft(player)
             local y1 = cell.owner.position.y - cell.construction_radius + 1
             local x2 = cell.owner.position.x + cell.construction_radius - 1
             local y2 = cell.owner.position.y + cell.construction_radius - 1
+
+            for _, bot in pairs(cell.logistic_network.construction_robots) do
+                if items[bot.name] then
+                    if not items[bot.name].current then items[bot.name].current = 0 end
+                    items[bot.name].current = items[bot.name].current + 1
+                end
+            end
+
 
             if player.mod_settings['hhr-autocraft-ghosts'].value then
                 -- Find what is needed to place a ghost entity
@@ -255,7 +270,7 @@ local function get_list_of_items_to_craft(player)
         if data.current then
             data.current = data.current + inv.get_item_count(item)
         else
-            data.current = inv.get_item_count(item)
+            data.current = inv.get_item_count(item) or 0
         end
         data.pct = (data.current * 100) / data.target
     end
@@ -269,7 +284,11 @@ local function get_list_of_items_to_craft(player)
         end
     end
 
+    player.print('---------')
     table.sort(list, function(a, b) return a.pct < b.pct end)
+    for _, row in pairs(list) do
+        player.print(row.name .. " " .. row.current .. "/" .. row.target .. "(" .. row.pct .. "%)")
+    end
 
     return list
 end
