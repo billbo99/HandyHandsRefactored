@@ -75,17 +75,12 @@ data:extend({
         maximum_value = 100,
         order = "200"
     },
-    -- {
-    --     type = "bool-setting",
-    --     name = "hhr-handyhands-autocraft-multi-product-recipes",
-    --     setting_type = "runtime-per-user",
-    --     default_value = false
-    -- },
-    -- {
-    --     type = "string-setting",
-    --     name = "hhr-logistics-requests-are-autocraft-requests",
-    --     setting_type = "runtime-per-user",
-    --     default_value = 'When personal logistics requests are enabled',
-    --     allowed_values = { 'Never', 'When personal logistics requests are enabled', 'Always' },
-    -- }
+    {
+        type = "string-setting",
+        name = "hhr-logistics-group",
+        setting_type = "runtime-per-user",
+        allow_blank = true,
+        default_value = "",
+        order = "400"
+    },
 })

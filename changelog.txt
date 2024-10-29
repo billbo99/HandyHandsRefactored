@@ -1,4 +1,17 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.5
+Date: 2024-10-29
+  Bugfixes:
+    - Got rid of "hi" message in console logs
+  Changes:
+    - Performed better checks on ammo count
+    - Added a "player" setting so that you can restrict what handy hands is crafting to a single logistics section.   Please keep your names unique.  If left blank in settings all logistics requests are checked.  If the personal group is disabled it will start looking for all outstading logistics requests it can make as per normal.
+---------------------------------------------------------------------------------------------------
+Version: 2.0.4
+Date: 2024-10-27
+  Bugfixes:
+    - Disabled checking logistics request by mistake.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.3
 Date: 2024-10-27
   Changes:

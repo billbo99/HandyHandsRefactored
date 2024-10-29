@@ -77,17 +77,20 @@ end
 local function get_list_of_items_to_craft(player)
     local items = {}
 
-    local function update_item(item, count, quality)
-        local name
-        if quality then
-            name = item
-        else
-            name = item
+    local function update_item(item, current, target, quality)
+        if item then
+            local name
+            if quality then
+                name = item
+            else
+                name = item
+            end
+            if not (items[name]) then
+                items[name] = { current = 0, target = 0 }
+            end
+            if current then items[name].current = items[name].current + current end
+            if target then items[name].target = items[name].target + target end
         end
-        if not (items[name]) then
-            items[name] = { current = 0, target = 0 }
-        end
-        items[name].target = items[name].target + count
     end
 
     -- Check current crafting queue
@@ -109,34 +112,62 @@ local function get_list_of_items_to_craft(player)
     -- Check ammo
     if player.mod_settings['hhr-autocraft-ammo-slots'].value then
         local ammo_bar = player.get_inventory(defines.inventory.character_ammo)
-        for _, _dict in pairs(ammo_bar.get_contents()) do
-            local item = prototypes.item[_dict.name]
-            local _key = _dict.name
-            items[_key] = { current = _dict.count, target = item.stack_size }
-        end
-
-        if ammo_bar.is_filtered() then
-            for i = 1, #ammo_bar do
-                local ammo_name = ammo_bar.get_filter(i)
-                if ammo_name then
-                    local item = prototypes.item[ammo_name.name]
-                    items[item.name] = { target = item.stack_size }
+        local is_filtered = ammo_bar.is_filtered()
+        for i = 1, #ammo_bar do
+            local item = ammo_bar[i]
+            local filtered_ammo, name, count, quality, stack_size, proto
+            count = 0
+            quality = "normal"
+            if item and item.valid and item.valid_for_read then
+                name = item.name
+                count = item.count
+                proto = prototypes.item[name]
+                stack_size = proto.stack_size
+            end
+            if is_filtered then
+                filtered_ammo = ammo_bar.get_filter(i)
+                if filtered_ammo then
+                    name = filtered_ammo.name
+                    quality = filtered_ammo.quality
+                    proto = prototypes.item[name]
+                    stack_size = proto.stack_size
                 end
             end
+            update_item(name, count, stack_size, quality)
         end
     end
 
     -- Check logistics -- waiting on https://forums.factorio.com/viewtopic.php?f=28&t=117875
-    -- if player.mod_settings['hhr-autocraft-logistics-slots'].value then
-    --     if player.character.get_requester_point() and player.character.get_requester_point().enabled and player.character.get_requester_point().filters then
-    --         for _, slot in pairs(player.character.get_requester_point().filters) do
-    --             if slot.count > 0 then
-    --                 local name = slot.name .. "^" .. slot.quality
-    --                 items[name] = { target = slot.count, quality=slot.quality }
-    --             end
-    --         end
-    --     end
-    -- end
+    if player.mod_settings['hhr-autocraft-logistics-slots'].value then
+        if player.character.get_requester_point() and player.character.get_requester_point().enabled and player.character.get_requester_point().filters then
+            local sections = player.character.get_requester_point().sections
+            local personal_section
+            local personal_section_found = false
+            if player.mod_settings['hhr-logistics-group'].value and player.mod_settings['hhr-logistics-group'].value ~= "" then
+                for _, section in pairs(sections) do
+                    if section.group == player.mod_settings['hhr-logistics-group'].value and section.active then
+                        personal_section_found = true
+                        personal_section = section
+                    end
+                end
+            end
+            if personal_section_found then
+                for _, slot in pairs(personal_section.filters) do
+                    if slot.min > 0 and slot.value then
+                        local name = slot.value.name
+                        update_item(name, nil, slot.min, slot.value.quality)
+                    end
+                end
+            else
+                for _, slot in pairs(player.character.get_requester_point().filters) do
+                    if slot.count > 0 then
+                        local name = slot.name
+                        update_item(name, nil, slot.count, slot.quality)
+                    end
+                end
+            end
+        end
+    end
 
     -- Check players hand contents
     local player_cursor = player.cursor_stack
@@ -149,17 +180,16 @@ local function get_list_of_items_to_craft(player)
 
     -- Check players hand for ghost
     local cursor_ghost = player.cursor_ghost
-    if cursor_ghost and cursor_ghost.valid then
-        if not (items[cursor_ghost.name]) then
-            items[cursor_ghost.name] = { current = 0, target = 1 }
-        end
+    if cursor_ghost then
+        update_item(cursor_ghost.name.name, nil, 1, cursor_ghost.quality)
     end
 
-    if player.get_requester_point() then
-        for _, row in pairs(player.get_requester_point().targeted_items_deliver) do
-            print("hi")
-        end
-    end
+    -- https://forums.factorio.com/viewtopic.php?f=28&t=117875
+    -- if player.get_requester_point() then
+    --     for _, row in pairs(player.get_requester_point().targeted_items_deliver) do
+    --         print("hi")
+    --     end
+    -- end
 
     if player.character.allow_dispatching_robots then
         local cell = player.character.logistic_cell
@@ -184,7 +214,7 @@ local function get_list_of_items_to_craft(player)
                     for _, entity in pairs(ghost_entities) do
                         if entity.ghost_prototype.items_to_place_this then
                             for _, v in pairs(entity.ghost_prototype.items_to_place_this) do
-                                update_item(v.name, v.count)
+                                update_item(v.name, nil, v.count)
                             end
                         end
                     end
@@ -198,7 +228,7 @@ local function get_list_of_items_to_craft(player)
                     for _, entity in pairs(upgrade_entities) do
                         local upgrade = entity.get_upgrade_target()
                         if upgrade ~= nil then
-                            update_item(upgrade.name, 1)
+                            update_item(upgrade.name, nil, 1)
                         end
                     end
                 end
@@ -211,7 +241,7 @@ local function get_list_of_items_to_craft(player)
                     for _, entity in pairs(tile_entities) do
                         if entity.ghost_prototype.items_to_place_this then
                             for _, v in pairs(entity.ghost_prototype.items_to_place_this) do
-                                update_item(v.name, v.count)
+                                update_item(v.name, nil, v.count)
                             end
                         end
                     end
@@ -226,7 +256,7 @@ local function get_list_of_items_to_craft(player)
                         local requests = entity.item_requests
                         if requests ~= nil then
                             for idx, row in pairs(requests) do
-                                update_item(row.name, row.count, row.quality)
+                                update_item(row.name, nil, row.count, row.quality)
                             end
                         end
                     end
