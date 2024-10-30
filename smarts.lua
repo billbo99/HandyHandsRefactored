@@ -88,8 +88,14 @@ local function get_list_of_items_to_craft(player)
             if not (items[name]) then
                 items[name] = { current = 0, target = 0 }
             end
-            if current then items[name].current = items[name].current + current end
-            if target then items[name].target = items[name].target + target end
+            if current then
+                if not items[name].current then items[name].current = 0 end
+                items[name].current = items[name].current + current
+            end
+            if target then
+                if not items[name].target then items[name].target = 0 end
+                items[name].target = items[name].target + target
+            end
         end
     end
 

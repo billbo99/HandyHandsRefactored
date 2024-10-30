@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.6
+Date: 2024-10-29
+  Bugfixes:
+    - HandyHandsRefactored/smarts.lua:91: attempt to perform arithmetic on field 'current' (a nil value)
+---------------------------------------------------------------------------------------------------
 Version: 2.0.5
 Date: 2024-10-29
   Bugfixes:
