@@ -77,7 +77,7 @@ end
 local function get_list_of_items_to_craft(player)
     local items = {}
 
-    local function update_item(item, current, target, quality)
+    local function update_item(item, current, target, quality, max)
         if item then
             local name
             if quality then
@@ -95,6 +95,9 @@ local function get_list_of_items_to_craft(player)
             if target then
                 if not items[name].target then items[name].target = 0 end
                 items[name].target = items[name].target + target
+            end
+            if max then
+                items[name].target = max
             end
         end
     end
@@ -140,38 +143,6 @@ local function get_list_of_items_to_craft(player)
                 end
             end
             update_item(name, count, stack_size, quality)
-        end
-    end
-
-    -- Check logistics -- waiting on https://forums.factorio.com/viewtopic.php?f=28&t=117875
-    if player.mod_settings['hhr-autocraft-logistics-slots'].value then
-        if player.character.get_requester_point() and player.character.get_requester_point().enabled and player.character.get_requester_point().filters then
-            local sections = player.character.get_requester_point().sections
-            local personal_section
-            local personal_section_found = false
-            if player.mod_settings['hhr-logistics-group'].value and player.mod_settings['hhr-logistics-group'].value ~= "" then
-                for _, section in pairs(sections) do
-                    if section.group == player.mod_settings['hhr-logistics-group'].value and section.active then
-                        personal_section_found = true
-                        personal_section = section
-                    end
-                end
-            end
-            if personal_section_found then
-                for _, slot in pairs(personal_section.filters) do
-                    if slot.min > 0 and slot.value then
-                        local name = slot.value.name
-                        update_item(name, nil, slot.min, slot.value.quality)
-                    end
-                end
-            else
-                for _, slot in pairs(player.character.get_requester_point().filters) do
-                    if slot.count > 0 then
-                        local name = slot.name
-                        update_item(name, nil, slot.count, slot.quality)
-                    end
-                end
-            end
         end
     end
 
@@ -299,6 +270,45 @@ local function get_list_of_items_to_craft(player)
     end
     --     end
     -- end
+
+    -- Check logistics ** LAST **
+    if player.mod_settings['hhr-autocraft-logistics-slots'].value then
+        local requester_point = player.character.get_requester_point()
+        if requester_point and requester_point.enabled and requester_point.filters then
+            local sections = requester_point.sections
+            local personal_section
+            local personal_section_found = false
+            if player.mod_settings['hhr-logistics-group'].value and player.mod_settings['hhr-logistics-group'].value ~= "" then
+                for _, section in pairs(sections) do
+                    if section.group == player.mod_settings['hhr-logistics-group'].value and section.active then
+                        personal_section_found = true
+                        personal_section = section
+                    end
+                end
+            end
+            if personal_section_found then
+                for _, slot in pairs(personal_section.filters) do
+                    if slot and slot.min and slot.min > 0 and slot.value then
+                        local name = slot.value.name
+                        local max
+                        max = slot.max or nil
+                        if requester_point.trash_not_requested then max = slot.min end
+                        update_item(name, nil, slot.min, slot.value.quality, max)
+                    end
+                end
+            else
+                for _, slot in pairs(requester_point.filters) do
+                    if slot.count > 0 then
+                        local name = slot.name
+                        local max
+                        max = slot.max_count or nil
+                        if requester_point.trash_not_requested then max = slot.min end
+                        update_item(name, nil, slot.count, slot.quality, max)
+                    end
+                end
+            end
+        end
+    end
 
     -- Process inventory
     local inv = player.get_main_inventory()
