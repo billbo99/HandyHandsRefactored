@@ -330,11 +330,13 @@ local function get_list_of_items_to_craft(player)
         end
     end
 
-    -- player.print('---------')
-    -- table.sort(list, function(a, b) return a.pct < b.pct end)
-    -- for _, row in pairs(list) do
-    --     player.print(row.name .. " " .. row.current .. "/" .. row.target .. "(" .. row.pct .. "%)")
-    -- end
+    table.sort(list, function(a, b) return a.pct < b.pct end)
+    if player.mod_settings['hhr-debug-output'].value then
+        player.print('---------')
+        for _, row in pairs(list) do
+            player.print(row.name .. " " .. row.current .. "/" .. row.target .. "(" .. row.pct .. "%)")
+        end
+    end
 
     return list
 end

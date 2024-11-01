@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.8
+Date: 2024-11-01
+  Changes:
+    - Add setting to enable debug mode,  will list things that HHR is thinking about crafting
+    - Un-commented sort function
+---------------------------------------------------------------------------------------------------
 Version: 2.0.7
 Date: 2024-10-30
   Changes:

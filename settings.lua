@@ -83,4 +83,11 @@ data:extend({
         default_value = "",
         order = "400"
     },
+    {
+        type = "bool-setting",
+        name = "hhr-debug-output",
+        setting_type = "runtime-per-user",
+        default_value = false,
+        order = "999"
+    },
 })
