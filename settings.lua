@@ -18,6 +18,15 @@ data:extend({
         order = "300"
     },
     {
+        type = "int-setting",
+        name = "hhr-quickbar-stack-pct",
+        setting_type = "runtime-per-user",
+        default_value = 100,
+        minimum_value = 0,
+        maximum_value = 100,
+        order = "301"
+    },
+    {
         type = "bool-setting",
         name = "hhr-autocraft-quickbar-slots",
         setting_type = "runtime-per-user",

@@ -19,7 +19,7 @@ local function logger(msg)
                 local player = game.get_player(idx)
                 if player then
                     player.print(msg)
-                    helpers.write_file("HandyHandsRefactored.txt", msg, true, idx)
+                    helpers.write_file("HandyHandsRefactored.txt", msg .. "\n", true, idx)
                 end
             end
         end
@@ -113,8 +113,12 @@ local function get_list_of_items_to_craft(player)
     -- Check quickbar
     if player.mod_settings['hhr-autocraft-quickbar-slots'].value then
         local quickbar = storage.cached_quickbar_slot_data[player.index] or cache_player_quick_bar_data(player)
+        local quick_bar_pct = player.mod_settings['hhr-quickbar-stack-pct'].value
         for k, v in pairs(quickbar) do
             items[k] = table.deepcopy(v)
+            if items[k].target then
+                items[k].target = (items[k].target * quick_bar_pct) / 100
+            end
         end
     end
 
@@ -377,31 +381,33 @@ local function check_player(player)
                     if recipes then
                         for _, recipe in pairs(recipes) do
                             local craftable_count = player.get_craftable_count(recipe.name)
-                            if player.force.recipes[recipe.name].enabled and craftable_count > 0 then
+                            if player.force.recipes[recipe.name].enabled and not (recipe.hidden) and craftable_count > 0 then
                                 local amount = 1
                                 for _, product in pairs(recipe.products) do
                                     if product.name == item.name then
                                         amount = product.amount or 1
                                     end
                                 end
-                                craftable_count = craftable_count * amount
-                                local max_craft = player.mod_settings['hhr-max-craft-at-a-time'].value * amount
+                                if amount > 0 then
+                                    craftable_count = craftable_count * amount
+                                    local max_craft = player.mod_settings['hhr-max-craft-at-a-time'].value * amount
 
-                                if max_craft > 0 and craftable_count > max_craft then craftable_count = max_craft end
+                                    if max_craft > 0 and craftable_count > max_craft then craftable_count = max_craft end
 
-                                -- Make sure we dont over craft an item
-                                if craftable_count > (item.target - item.current) then
-                                    craftable_count = (item.target - item.current)
+                                    -- Make sure we dont over craft an item
+                                    if craftable_count > (item.target - item.current) then
+                                        craftable_count = (item.target - item.current)
+                                    end
+
+                                    craftable_count = craftable_count / amount
+                                    if craftable_count < 1 then craftable_count = 1 end
+
+                                    logger(game.tick .. " " .. " begin_crafting " .. recipe.name .. " count=" .. tostring(craftable_count))
+                                    player.begin_crafting { count = craftable_count, recipe = recipe.name, silent = true }
+                                    storage.player_current_job[player.index] = recipe
+                                    flag = false
+                                    break
                                 end
-
-                                craftable_count = craftable_count / amount
-                                if craftable_count < 1 then craftable_count = 1 end
-
-                                logger(game.tick .. " " .. " begin_crafting " .. recipe.name .. " count=" .. tostring(craftable_count))
-                                player.begin_crafting { count = craftable_count, recipe = recipe.name, silent = true }
-                                storage.player_current_job[player.index] = recipe
-                                flag = false
-                                break
                             end
                         end
                     end

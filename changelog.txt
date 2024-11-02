@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.9
+Date: 2024-11-02
+  Changes:
+    - Added a setting to set a percentage of quickslot items to craft
+  Bugfixes:
+    - HandyHandsRefactored/smarts.lua:401: in function 'checkplayer'
+---------------------------------------------------------------------------------------------------
 Version: 2.0.8
 Date: 2024-11-01
   Changes:
