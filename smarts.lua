@@ -53,6 +53,8 @@ local function cache_player_quick_bar_data(player)
     local index = 1
     for row = 1, quick_bar_rows do
         for column = 1, 10 do
+            -- https://forums.factorio.com/viewtopic.php?f=28&t=121815
+            -- currently this method does not return quality
             local slot = player.get_quick_bar_slot(index)
             if slot then
                 items[slot.name] = { target = slot.stack_size }
@@ -77,13 +79,10 @@ end
 local function get_list_of_items_to_craft(player)
     local items = {}
 
-    local function update_item(item, current, target, quality, max)
-        if item then
-            local name
-            if quality then
-                name = item
-            else
-                name = item
+    local function update_item(name, current, target, quality, max)
+        if name then
+            if quality and quality ~= 'normal' then
+                return
             end
             if not (items[name]) then
                 items[name] = { current = 0, target = 0 }
@@ -130,7 +129,7 @@ local function get_list_of_items_to_craft(player)
             local item = ammo_bar[i]
             local filtered_ammo, name, count, quality, stack_size, proto
             count = 0
-            quality = "normal"
+            quality = item.quality.name
             if item and item.valid and item.valid_for_read then
                 name = item.name
                 count = item.count
@@ -188,14 +187,16 @@ local function get_list_of_items_to_craft(player)
             end
 
 
+            -- https://forums.factorio.com/viewtopic.php?f=25&t=120825&p=640742#p640742
+            -- entity.ghost_prototype.items_to_place_this .. does not return quality
             if player.mod_settings['hhr-autocraft-ghosts'].value then
                 -- Find what is needed to place a ghost entity
-                local ghost_entities = cell.owner.surface.find_entities_filtered { area = { { x1, y1 }, { x2, y2 } }, name = "entity-ghost", type = "entity-ghost" }
+                local ghost_entities = cell.owner.surface.find_entities_filtered { area = { { x1, y1 }, { x2, y2 } }, name = "entity-ghost", type = "entity-ghost", quality = "normal" }
                 if ghost_entities ~= nil and #ghost_entities > 0 then
                     for _, entity in pairs(ghost_entities) do
                         if entity.ghost_prototype.items_to_place_this then
                             for _, v in pairs(entity.ghost_prototype.items_to_place_this) do
-                                update_item(v.name, nil, v.count)
+                                update_item(v.name, nil, v.count, entity.quality.name)
                             end
                         end
                     end
@@ -207,22 +208,24 @@ local function get_list_of_items_to_craft(player)
                 local upgrade_entities = cell.owner.surface.find_entities_filtered { area = { { x1, y1 }, { x2, y2 } }, to_be_upgraded = true }
                 if upgrade_entities ~= nil and #upgrade_entities > 0 then
                     for _, entity in pairs(upgrade_entities) do
-                        local upgrade = entity.get_upgrade_target()
+                        local upgrade, quality = entity.get_upgrade_target()
                         if upgrade ~= nil then
-                            update_item(upgrade.name, nil, 1)
+                            update_item(upgrade.name, nil, 1, quality.name)
                         end
                     end
                 end
             end
 
+            -- https://forums.factorio.com/viewtopic.php?f=25&t=120825&p=640742#p640742
+            -- entity.ghost_prototype.items_to_place_this .. does not return quality
             if player.mod_settings['hhr-autocraft-tiles'].value then
                 -- Find what ghost tiles need to be crafted
-                local tile_entities = cell.owner.surface.find_entities_filtered { area = { { x1, y1 }, { x2, y2 } }, name = "tile-ghost", type = "tile-ghost" }
+                local tile_entities = cell.owner.surface.find_entities_filtered { area = { { x1, y1 }, { x2, y2 } }, name = "tile-ghost", type = "tile-ghost", quality = 'normal' }
                 if tile_entities ~= nil and #tile_entities > 0 then
                     for _, entity in pairs(tile_entities) do
                         if entity.ghost_prototype.items_to_place_this then
                             for _, v in pairs(entity.ghost_prototype.items_to_place_this) do
-                                update_item(v.name, nil, v.count)
+                                update_item(v.name, nil, v.count, entity.quality.name)
                             end
                         end
                     end

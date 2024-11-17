@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.10
+Date: 2024-11-17
+  Changes:
+    - Players can only hand craft "normal items" in vanilla
+  Info:
+    - Waiting on https://forums.factorio.com/viewtopic.php?f=28&t=121815 to correctly read quickbar.  Any thing on quickbar > normal quality will be treated as normal until API request is forfilled.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.9
 Date: 2024-11-02
   Changes:
