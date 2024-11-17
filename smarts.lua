@@ -129,12 +129,16 @@ local function get_list_of_items_to_craft(player)
             local item = ammo_bar[i]
             local filtered_ammo, name, count, quality, stack_size, proto
             count = 0
-            quality = item.quality.name
             if item and item.valid and item.valid_for_read then
                 name = item.name
                 count = item.count
                 proto = prototypes.item[name]
                 stack_size = proto.stack_size
+                if item.quality then
+                    quality = item.quality.name
+                else
+                    quality = "normal"
+                end
             end
             if is_filtered then
                 filtered_ammo = ammo_bar.get_filter(i)
