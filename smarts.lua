@@ -53,11 +53,14 @@ local function cache_player_quick_bar_data(player)
     local index = 1
     for row = 1, quick_bar_rows do
         for column = 1, 10 do
-            -- https://forums.factorio.com/viewtopic.php?f=28&t=121815
-            -- currently this method does not return quality
             local slot = player.get_quick_bar_slot(index)
             if slot then
-                items[slot.name] = { target = slot.stack_size }
+                local item = prototypes.item[slot.name]
+                if slot.quality and slot.quality ~= "normal" then
+                    -- skip non-normal items
+                else
+                    items[slot.name] = { target = item.stack_size, quality = slot.quality }
+                end
             end
             index = index + 1
         end
@@ -85,7 +88,7 @@ local function get_list_of_items_to_craft(player)
                 return
             end
             if not (items[name]) then
-                items[name] = { current = 0, target = 0 }
+                items[name] = { current = 0, target = 0, quality = 'normal' }
             end
             if current then
                 if not items[name].current then items[name].current = 0 end
@@ -167,13 +170,6 @@ local function get_list_of_items_to_craft(player)
     if cursor_ghost then
         update_item(cursor_ghost.name.name, nil, 1, cursor_ghost.quality)
     end
-
-    -- https://forums.factorio.com/viewtopic.php?f=28&t=117875
-    -- if player.get_requester_point() then
-    --     for _, row in pairs(player.get_requester_point().targeted_items_deliver) do
-    --         print("hi")
-    --     end
-    -- end
 
     if player.character.allow_dispatching_robots then
         local cell = player.character.logistic_cell
@@ -266,6 +262,13 @@ local function get_list_of_items_to_craft(player)
                 end
             end
 
+            -- See what items are on the way to being delivered
+            if player.get_requester_point() then
+                for _, row in pairs(player.get_requester_point().targeted_items_deliver) do
+                    update_item(row.name, row.count, nil, row.quality)
+                end
+            end
+
             -- check robots inventory for items they are holding
             for _, robot in pairs(player.character.logistic_network.construction_robots) do
                 local robot_inv = robot.get_inventory(defines.inventory.robot_cargo)
@@ -325,9 +328,9 @@ local function get_list_of_items_to_craft(player)
     local inv = player.get_main_inventory()
     for item, data in pairs(items) do
         if data.current then
-            data.current = data.current + inv.get_item_count(item)
+            data.current = data.current + inv.get_item_count({ name = item, quality = data.quality })
         else
-            data.current = inv.get_item_count(item) or 0
+            data.current = inv.get_item_count({ name = item, quality = data.quality }) or 0
         end
         data.pct = (data.current * 100) / data.target
     end
@@ -337,7 +340,9 @@ local function get_list_of_items_to_craft(player)
     for k, v in pairs(items) do
         if v.pct < 100 then
             v.name = k
-            table.insert(list, v)
+            if v.quality and v.quality == "normal" then
+                table.insert(list, v)
+            end
         end
     end
 
