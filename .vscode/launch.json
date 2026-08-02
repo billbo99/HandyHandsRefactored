@@ -5,7 +5,7 @@
             "type": "factoriomod",
             "request": "launch",
             "name": "Factorio Mod Debug",
-            "modsPath": "d:/dev/mods_Death_Counter",
+            "modsPath": "d:/dev/mods_billbo99",
             // "hookMode": "debug",
             "hookControl": [
                 "HandyHandsRefactored",

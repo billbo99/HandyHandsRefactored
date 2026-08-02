@@ -50,19 +50,19 @@ end
 local function cache_player_quick_bar_data(player)
     local items = {}
     local quick_bar_rows = player.mod_settings['hhr-quickbar-rows-to-read'].value
-    local index = 1
+    local quick_bar_width = player.quick_bar_width
     for row = 1, quick_bar_rows do
-        for column = 1, 10 do
-            local slot = player.get_quick_bar_slot(index)
-            if slot then
-                local item = prototypes.item[slot.name]
-                if slot.quality and slot.quality ~= "normal" then
+        for column = 1, quick_bar_width do
+            local slot = player.get_quick_bar_slot(row, column)
+            if slot and slot.type == "filter" then
+                local _name = slot.filter.name
+                local item = prototypes.item[_name]
+                if slot.filter.quality and slot.filter.quality ~= "normal" then
                     -- skip non-normal items
                 else
-                    items[slot.name] = { target = item.stack_size, quality = slot.quality }
+                    items[_name] = { target = item.stack_size, quality = slot.filter.quality }
                 end
             end
-            index = index + 1
         end
     end
     return items
